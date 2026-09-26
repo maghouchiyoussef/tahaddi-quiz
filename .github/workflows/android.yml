@@ -29,10 +29,16 @@ jobs:
         run: |
           chmod +x gradlew
           ./gradlew --no-daemon bundleRelease assembleDebug
-      - name: Publish build as release
+      - name: Publish build to "builds" branch
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cp app/android/app/build/outputs/bundle/release/app-release.aab tahaddi-unsigned.aab
-          cp app/android/app/build/outputs/apk/debug/app-debug.apk tahaddi-debug.apk
-          gh release create "build-${{ github.run_number }}" tahaddi-unsigned.aab tahaddi-debug.apk --title "Build ${{ github.run_number }}" --notes "Automated build"
+          mkdir out
+          cp app/android/app/build/outputs/bundle/release/app-release.aab out/tahaddi-unsigned.aab
+          cp app/android/app/build/outputs/apk/debug/app-debug.apk out/tahaddi-debug.apk
+          echo "${{ github.run_number }}" > out/BUILD
+          cd out
+          git init -q -b builds
+          git add .
+          git -c user.name=ci -c user.email=ci@users.noreply.github.com commit -q -m "Build ${{ github.run_number }}"
+          git push -f "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git" builds
